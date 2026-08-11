@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+import shutil
 from pathlib import Path
+
+
+PROJECT_URL = "https://github.com/vanch007/mlx-indextts2"
+MODEL_LICENSE = Path("licenses/INDEXTTS_MODEL_LICENSE")
 
 
 MODELS = [
@@ -56,6 +61,31 @@ MODELS = [
         "size": "2.0GB",
         "source": "Derived from local Vietnamese MLX conversion before PyTorch project cleanup.",
         "note": "Vietnamese model with upstream MLX GPT-only 8-bit quantization.",
+    },
+]
+
+
+V25_MODELS = [
+    {
+        "dir": "models/mlx-IndexTTS-2.5",
+        "repo": "vanch007/mlx-indextts2-2.5-fp16",
+        "precision": "fp16",
+        "size": "2.0GB",
+        "note": "All GPT, EnhancedCodec, S2Mel/DiT, and BigVGAN floating weights use float16.",
+    },
+    {
+        "dir": "models/mlx-IndexTTS-2.5-8bit",
+        "repo": "vanch007/mlx-indextts2-2.5-8bit",
+        "precision": "8bit",
+        "size": "1.6GB",
+        "note": "GPT uses persistent 8-bit group quantization; the remaining components use float16.",
+    },
+    {
+        "dir": "models/mlx-IndexTTS-2.5-fp32",
+        "repo": "vanch007/mlx-indextts2-2.5-fp32",
+        "precision": "fp32",
+        "size": "4.0GB",
+        "note": "All GPT, EnhancedCodec, S2Mel/DiT, and BigVGAN floating weights use float32.",
     },
 ]
 
@@ -125,7 +155,7 @@ license: mit
 
 # {title}
 
-This is a converted MLX IndexTTS2 model for Apple Silicon inference with [`solar2ain/mlx-indextts`](https://github.com/solar2ain/mlx-indextts).
+This is a converted MLX IndexTTS2 model for Apple Silicon inference with [`vanch007/mlx-indextts2`]({PROJECT_URL}).
 
 It was prepared during the local IndexTTS2 Apple Silicon optimization work, where the goal was stable Vietnamese and multilingual TTS on an M3 Max Mac without PyTorch MPS memory crashes.
 
@@ -158,11 +188,11 @@ The repository root is a ready-to-use MLX IndexTTS2 model directory:
 Install and use `mlx-indextts`:
 
 ```bash
-git clone https://github.com/solar2ain/mlx-indextts.git
-cd mlx-indextts
+git clone {PROJECT_URL}.git
+cd mlx-indextts2
 uv sync --extra convert --extra v2
 
-huggingface-cli download {model['repo']} \\
+hf download {model['repo']} \\
   --local-dir models/{repo_name} \\
   --local-dir-use-symlinks False
 
@@ -189,7 +219,7 @@ uv run mlx-indextts speaker \\
 
 Benchmarked on a 128GB unified-memory M3 Max Mac using:
 
-- `mlx-indextts` from `solar2ain/mlx-indextts`
+- `mlx-indextts` from `vanch007/mlx-indextts2`
 - precomputed `.npz` speaker conditioning
 - `memory_limit=24GB`
 - `diffusion_steps=16`
@@ -214,17 +244,145 @@ ASR was used only as an automated sanity check. Final production selection shoul
 
 ## Provenance and Scope
 
-This is an MLX conversion for local Apple Silicon inference, not the original PyTorch release. The original implementation and model family are associated with IndexTTS / IndexTTS2; the MLX runtime used here is `solar2ain/mlx-indextts`.
+This is an MLX conversion for local Apple Silicon inference, not the original PyTorch release. The original implementation and model family are associated with IndexTTS / IndexTTS2; the MLX runtime used here is `vanch007/mlx-indextts2`.
 
 The benchmark numbers are environment-specific and should be treated as local M3 Max results, not universal performance guarantees.
+"""
+
+
+def v25_card(model: dict) -> str:
+    repo_name = model["repo"].split("/", 1)[1]
+    recommendation = (
+        " This is the recommended default variant."
+        if model["precision"] == "8bit"
+        else ""
+    )
+    return f"""---
+library_name: mlx
+pipeline_tag: text-to-speech
+base_model: IndexTeam/IndexTTS-2.5
+license: other
+license_name: bilibili-model-use-license-agreement
+license_link: https://huggingface.co/IndexTeam/IndexTTS-2.5/blob/d0aa86e75bb6f3437f3831e95056fa72842d89ef/LICENSE
+language:
+- zh
+- en
+- ja
+- es
+- ar
+tags:
+- indextts2
+- indextts-2.5
+- mlx
+- apple-silicon
+- text-to-speech
+- voice-cloning
+- emotion-control
+- {model['precision']}
+---
+
+# {repo_name}
+
+IndexTTS 2.5 converted to native MLX weights for Apple Silicon. Use it with
+[`vanch007/mlx-indextts2`]({PROJECT_URL}).
+
+## Variant
+
+- Precision / quantization: **{model['precision']}**
+- Approximate local size: **{model['size']}**
+- Source model: [`IndexTeam/IndexTTS-2.5`](https://huggingface.co/IndexTeam/IndexTTS-2.5)
+- Source revision: `d0aa86e75bb6f3437f3831e95056fa72842d89ef`
+- Conversion status: strict manifest **pass**
+- Details: {model['note']}{recommendation}
+
+The model supports Chinese, English, Japanese, Spanish, and Arabic, including
+cross-lingual voice transfer, separate speaker/emotion references, manual and
+text-derived emotion control, and Pinyin/CMU/Kana pronunciation annotations.
+
+## Download and Run
+
+```bash
+git clone {PROJECT_URL}.git
+cd mlx-indextts2
+uv sync --extra v25
+
+hf download {model['repo']} \\
+  --local-dir models/{repo_name}
+
+uv run mlx-indextts generate \\
+  --profile v25 \\
+  -m models/{repo_name} \\
+  --language zh \\
+  -r /path/to/reference.wav \\
+  -t "你好，这是 IndexTTS 2.5 的 MLX 推理测试。" \\
+  -o output.wav
+```
+
+See the [project README]({PROJECT_URL}#quick-start) and
+[IndexTTS 2.5 guide]({PROJECT_URL}/blob/main/docs/indextts-2.5.md) for batch,
+API, WebUI, streaming, duration, pronunciation, and emotion-control examples.
+
+## Included Files
+
+- `gpt.safetensors`
+- `codec.safetensors`
+- `s2mel.safetensors`
+- `bigvgan.safetensors`
+- `multilingual_zh_ja_yue_char_del.tiktoken`
+- `config.yaml` and `config.json`
+- `model_manifest.json` and `conversion_report.json`
+- reference preprocessing statistics/features
+- `LICENSE`
+
+The runtime additionally resolves the manifest-declared
+`facebook/w2v-bert-2.0` and `funasr/campplus` preprocessing dependencies.
+
+## Validation Boundary
+
+The converted component coverage and strict load checks passed. The project
+validation matrix also covers five-language synthesis, ASR sanity checks,
+speaker similarity, emotion modes, cross-lingual generation, batch/API/WebUI,
+and completed-segment streaming. Results are hardware- and sample-specific;
+human listening remains recommended before production use.
+
+## License and Derivative Notice
+
+The repository code is MIT-licensed, but these converted model weights are a
+Derivative Work governed by the included **bilibili Model Use License
+Agreement**. Review its commercial thresholds, downstream obligations, use
+restrictions, and prohibited high-risk scenarios before downloading or using
+the model.
+
+Any modifications made to the original model in this Derivative Work are not
+endorsed, warranted, or guaranteed by the original right-holder of the
+original model, and the original right-holder disclaims all liability related
+to this Derivative Work.
 """
 
 
 def main() -> None:
     for model in MODELS:
         path = Path(model["dir"]) / "README.md"
+        if not path.parent.is_dir():
+            print(f"skip missing model directory: {path.parent}")
+            continue
         path.write_text(card(model), encoding="utf-8")
         print(path)
+
+    if not MODEL_LICENSE.is_file():
+        raise FileNotFoundError(f"Missing model license: {MODEL_LICENSE}")
+
+    for model in V25_MODELS:
+        directory = Path(model["dir"])
+        if not directory.is_dir():
+            raise FileNotFoundError(
+                f"Missing IndexTTS 2.5 model directory: {directory}"
+            )
+        readme = directory / "README.md"
+        readme.write_text(v25_card(model), encoding="utf-8")
+        shutil.copyfile(MODEL_LICENSE, directory / "LICENSE")
+        print(readme)
+        print(directory / "LICENSE")
 
 
 if __name__ == "__main__":

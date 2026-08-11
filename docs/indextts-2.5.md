@@ -37,6 +37,19 @@ remain PyTorch preprocessing dependencies and are loaded lazily only when a raw
 reference must be analyzed. A versioned `.npz` speaker cache avoids that work on
 later calls.
 
+## Download a converted model
+
+The published MLX repositories are:
+
+- recommended GPT 8-bit: [`vanch007/mlx-indextts2-2.5-8bit`](https://huggingface.co/vanch007/mlx-indextts2-2.5-8bit);
+- FP16: [`vanch007/mlx-indextts2-2.5-fp16`](https://huggingface.co/vanch007/mlx-indextts2-2.5-fp16);
+- FP32: [`vanch007/mlx-indextts2-2.5-fp32`](https://huggingface.co/vanch007/mlx-indextts2-2.5-fp32).
+
+```bash
+hf download vanch007/mlx-indextts2-2.5-8bit \
+  --local-dir models/mlx-IndexTTS-2.5-8bit
+```
+
 ## Download and convert
 
 Download the exact audited source revision:
