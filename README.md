@@ -71,6 +71,25 @@ uv sync --extra v25
 uv sync --extra v25 --extra qwen --extra api --extra webui
 ```
 
+## Pre-converted IndexTTS 2.5 Models
+
+The validated MLX conversions are published under the `vanch007` Hugging Face
+account. All model cards point back to this GitHub project and include the
+upstream model license.
+
+| Variant | Hugging Face repository | Approx. size | Use case |
+| --- | --- | ---: | --- |
+| GPT 8-bit / FP16 components | [`vanch007/mlx-indextts2-2.5-8bit`](https://huggingface.co/vanch007/mlx-indextts2-2.5-8bit) | 1.6 GB | Recommended default |
+| FP16 | [`vanch007/mlx-indextts2-2.5-fp16`](https://huggingface.co/vanch007/mlx-indextts2-2.5-fp16) | 2.0 GB | Unquantized compact model |
+| FP32 | [`vanch007/mlx-indextts2-2.5-fp32`](https://huggingface.co/vanch007/mlx-indextts2-2.5-fp32) | 4.0 GB | Full-precision validation |
+
+Download the recommended model directly into the default runtime path:
+
+```bash
+hf download vanch007/mlx-indextts2-2.5-8bit \
+  --local-dir models/mlx-IndexTTS-2.5-8bit
+```
+
 ## Quick Start
 
 ### Local 8-bit Defaults
@@ -79,7 +98,7 @@ This checkout has been tuned for Apple Silicon IndexTTS2 migration work on an
 M3 Max Mac. If `--model` is omitted, the CLI uses these local models:
 
 - IndexTTS 2.5 / non-Vietnamese: `models/mlx-IndexTTS-2.5-8bit`
-- preserved IndexTTS 2.0 standard: `models/mlx-indexTTS2-standard-8bit`
+- IndexTTS 2.0 standard: supported when a compatible model path is installed
 - local Vietnamese 2.0 profile: `models/mlx-indexTTS2-vietnamese-8bit`
 
 Vietnamese is auto-selected when the input text contains Vietnamese tone marks.
@@ -545,7 +564,8 @@ Reproducible reports are written by `scripts/validate_v25_matrix.py`,
 
 Repository code uses the license in this repository. Official IndexTTS weights
 and converted/quantized derivatives are governed by the upstream
-**bilibili Model Use License Agreement**, including its commercial thresholds,
+**[bilibili Model Use License Agreement](licenses/INDEXTTS_MODEL_LICENSE)**,
+including its commercial thresholds,
 downstream notice obligations, and use restrictions. Keep the upstream license
 with every model copy.
 
