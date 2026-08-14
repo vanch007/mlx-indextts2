@@ -156,9 +156,18 @@ class GroupNorm(nn.Module):
             Normalized tensor in NCL format
         """
         batch, channels, length = x.shape
+        output_dtype = x.dtype
 
         # Reshape for group norm: (batch, groups, channels_per_group, length)
-        x = x.reshape(batch, self.num_groups, channels // self.num_groups, length)
+        # Match PyTorch GroupNorm's higher-precision accumulation for half
+        # inputs. Reducing directly in float16 can flatten time-varying speaker
+        # conditioning and make S2Mel emit stationary noise.
+        x = x.astype(mx.float32).reshape(
+            batch,
+            self.num_groups,
+            channels // self.num_groups,
+            length,
+        )
 
         # Compute mean and variance over (channels_per_group, length)
         mean = x.mean(axis=(2, 3), keepdims=True)
@@ -171,9 +180,10 @@ class GroupNorm(nn.Module):
         x = x.reshape(batch, channels, length)
 
         # Apply affine transformation
-        x = x * self.weight[None, :, None] + self.bias[None, :, None]
+        x = x * self.weight.astype(mx.float32)[None, :, None]
+        x = x + self.bias.astype(mx.float32)[None, :, None]
 
-        return x
+        return x.astype(output_dtype)
 
 
 class Mish(nn.Module):
