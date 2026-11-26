@@ -53,10 +53,10 @@ def resolve_mlx_memory_limits(
 ) -> MlxMemoryLimits:
     """Resolve MLX memory/cache limits for Apple unified-memory TTS workloads.
 
-    Explicit arguments win, then environment variables, then an automatic profile.
-    The automatic profile is intentionally conservative: it only changes defaults
-    on large unified-memory systems and caps M3 Max 128GB hosts at 96GB memory /
-    32GB cache, leaving RAM for PyTorch preprocessing, audio codecs, and the OS.
+    Explicit arguments win, then environment variables, then an automatic profile:
+    - Large unified-memory hosts (>= 64 GB): cap at 75% RAM (max 96 GB) and 25% cache (max 32 GB).
+    - Smaller unified-memory hosts (< 64 GB, e.g. 16-32 GB Macs): cap at 50% RAM (4-24 GB)
+      and 6.25% cache (0.5-4 GB) so Metal buffer caches cannot exhaust system memory.
     """
     source = "auto"
     env_memory = _env_float("MLX_INDEXTTS_MEMORY_LIMIT_GB", "MLX_TTS_MEMORY_LIMIT_GB", "MLX_MEMORY_LIMIT_GB")
@@ -79,10 +79,16 @@ def resolve_mlx_memory_limits(
     total_bytes = total_memory_bytes if total_memory_bytes is not None else _system_memory_bytes()
     total_gb = (float(total_bytes) / BYTES_PER_GB) if total_bytes else 0.0
 
-    if memory_limit_gb is None and total_gb >= LARGE_UNIFIED_MEMORY_GB:
-        memory_limit_gb = min(DEFAULT_MEMORY_CAP_GB, total_gb * 0.75)
-    if cache_limit_gb is None and total_gb >= LARGE_UNIFIED_MEMORY_GB:
-        cache_limit_gb = min(DEFAULT_CACHE_CAP_GB, total_gb * 0.25)
+    if memory_limit_gb is None and total_gb > 0:
+        if total_gb >= LARGE_UNIFIED_MEMORY_GB:
+            memory_limit_gb = min(DEFAULT_MEMORY_CAP_GB, total_gb * 0.75)
+        else:
+            memory_limit_gb = min(24.0, max(4.0, total_gb * 0.5))
+    if cache_limit_gb is None and total_gb > 0:
+        if total_gb >= LARGE_UNIFIED_MEMORY_GB:
+            cache_limit_gb = min(DEFAULT_CACHE_CAP_GB, total_gb * 0.25)
+        else:
+            cache_limit_gb = min(4.0, max(0.5, total_gb * 0.0625))
 
     return MlxMemoryLimits(
         memory_limit_gb=_normalize_limit(memory_limit_gb),

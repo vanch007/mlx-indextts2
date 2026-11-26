@@ -400,73 +400,76 @@ class TTSRuntime:
             effective_emo_alpha = adaptive_emo_alpha(resolved_emotion, base_alpha=options.emo_alpha)
         tts = self.load(model_path)
         start = time.perf_counter()
-        if version == "2.5":
-            tts.use_gpt_latent = options.use_gpt_latent
-            audio = tts.generate(
-                text=text,
-                reference_audio=ref_audio,
-                emotion_reference_audio=options.emotion_ref_audio,
-                output_path=output_path,
-                language=options.language,
-                max_mel_tokens=max_tokens,
-                max_text_tokens_per_segment=options.max_text_tokens,
-                interval_silence=options.interval_silence,
-                temperature=temperature,
-                top_k=options.top_k,
-                top_p=options.top_p,
-                repetition_penalty=options.repetition_penalty,
-                diffusion_steps=options.diffusion_steps,
-                cfg_rate=options.cfg_rate,
-                emotion=resolved_emotion,
-                emo_alpha=effective_emo_alpha,
-                use_random=options.use_random,
-                text_normalization=options.text_normalization,
-                duration_factor=options.duration_factor,
-                seed=options.seed,
-                verbose=options.verbose,
-                segment_overlap_ms=options.segment_overlap,
-                speed=(options.speed if not options.fit_duration else 1.0),
-            )
-        elif version == "2.0":
-            audio = tts.generate(
-                text=text,
-                reference_audio=ref_audio,
-                emotion_reference_audio=options.emotion_ref_audio,
-                output_path=output_path,
-                max_mel_tokens=max_tokens,
-                max_text_tokens_per_segment=options.max_text_tokens,
-                interval_silence=options.interval_silence,
-                temperature=temperature,
-                top_k=options.top_k,
-                top_p=options.top_p,
-                repetition_penalty=options.repetition_penalty,
-                diffusion_steps=options.diffusion_steps,
-                cfg_rate=options.cfg_rate,
-                emotion=resolved_emotion,
-                emo_alpha=effective_emo_alpha,
-                use_random=options.use_random,
-                seed=options.seed,
-                verbose=options.verbose,
-                segment_overlap_ms=options.segment_overlap,
-                speed=(options.speed if not options.fit_duration else 1.0),
-            )
-        else:
-            audio = tts.generate(
-                text=text,
-                ref_audio=ref_audio,
-                max_mel_tokens=max_tokens,
-                max_text_tokens_per_segment=options.max_text_tokens,
-                interval_silence=options.interval_silence,
-                temperature=temperature,
-                top_k=options.top_k,
-                top_p=options.top_p,
-                repetition_penalty=options.repetition_penalty,
-                seed=options.seed,
-                verbose=options.verbose,
-                segment_overlap_ms=options.segment_overlap,
-                speed=(options.speed if not options.fit_duration else 1.0),
-            )
-            tts.save_audio(audio, output_path)
+        try:
+            if version == "2.5":
+                tts.use_gpt_latent = options.use_gpt_latent
+                audio = tts.generate(
+                    text=text,
+                    reference_audio=ref_audio,
+                    emotion_reference_audio=options.emotion_ref_audio,
+                    output_path=output_path,
+                    language=options.language,
+                    max_mel_tokens=max_tokens,
+                    max_text_tokens_per_segment=options.max_text_tokens,
+                    interval_silence=options.interval_silence,
+                    temperature=temperature,
+                    top_k=options.top_k,
+                    top_p=options.top_p,
+                    repetition_penalty=options.repetition_penalty,
+                    diffusion_steps=options.diffusion_steps,
+                    cfg_rate=options.cfg_rate,
+                    emotion=resolved_emotion,
+                    emo_alpha=effective_emo_alpha,
+                    use_random=options.use_random,
+                    text_normalization=options.text_normalization,
+                    duration_factor=options.duration_factor,
+                    seed=options.seed,
+                    verbose=options.verbose,
+                    segment_overlap_ms=options.segment_overlap,
+                    speed=(options.speed if not options.fit_duration else 1.0),
+                )
+            elif version == "2.0":
+                audio = tts.generate(
+                    text=text,
+                    reference_audio=ref_audio,
+                    emotion_reference_audio=options.emotion_ref_audio,
+                    output_path=output_path,
+                    max_mel_tokens=max_tokens,
+                    max_text_tokens_per_segment=options.max_text_tokens,
+                    interval_silence=options.interval_silence,
+                    temperature=temperature,
+                    top_k=options.top_k,
+                    top_p=options.top_p,
+                    repetition_penalty=options.repetition_penalty,
+                    diffusion_steps=options.diffusion_steps,
+                    cfg_rate=options.cfg_rate,
+                    emotion=resolved_emotion,
+                    emo_alpha=effective_emo_alpha,
+                    use_random=options.use_random,
+                    seed=options.seed,
+                    verbose=options.verbose,
+                    segment_overlap_ms=options.segment_overlap,
+                    speed=(options.speed if not options.fit_duration else 1.0),
+                )
+            else:
+                audio = tts.generate(
+                    text=text,
+                    ref_audio=ref_audio,
+                    max_mel_tokens=max_tokens,
+                    max_text_tokens_per_segment=options.max_text_tokens,
+                    interval_silence=options.interval_silence,
+                    temperature=temperature,
+                    top_k=options.top_k,
+                    top_p=options.top_p,
+                    repetition_penalty=options.repetition_penalty,
+                    seed=options.seed,
+                    verbose=options.verbose,
+                    segment_overlap_ms=options.segment_overlap,
+                    speed=(options.speed if not options.fit_duration else 1.0),
+                )
+                tts.save_audio(audio, output_path)
+        finally:
+            _clear_mlx_cache()
 
         fit_duration_applied = False
         fit_duration_skip_reason = ""
@@ -584,30 +587,33 @@ class TTSRuntime:
             target_duration=options.target_duration,
             version="2.5",
         )
-        for chunk in tts.stream(
-            text=text,
-            reference_audio=ref_audio,
-            language=options.language,
-            emotion_reference_audio=options.emotion_ref_audio,
-            emotion=resolved_emotion,
-            emo_alpha=effective_emo_alpha,
-            use_random=options.use_random,
-            max_mel_tokens=max_tokens,
-            max_text_tokens_per_segment=options.max_text_tokens,
-            interval_silence=options.interval_silence,
-            temperature=options.temperature if options.temperature is not None else 0.8,
-            top_k=options.top_k,
-            top_p=options.top_p,
-            repetition_penalty=options.repetition_penalty,
-            diffusion_steps=options.diffusion_steps,
-            cfg_rate=options.cfg_rate,
-            duration_factor=options.duration_factor,
-            text_normalization=options.text_normalization,
-            seed=options.seed,
-            speed=options.speed,
-        ):
-            tts.last_generation_info.update(emotion_meta)
-            yield chunk
+        try:
+            for chunk in tts.stream(
+                text=text,
+                reference_audio=ref_audio,
+                language=options.language,
+                emotion_reference_audio=options.emotion_ref_audio,
+                emotion=resolved_emotion,
+                emo_alpha=effective_emo_alpha,
+                use_random=options.use_random,
+                max_mel_tokens=max_tokens,
+                max_text_tokens_per_segment=options.max_text_tokens,
+                interval_silence=options.interval_silence,
+                temperature=options.temperature if options.temperature is not None else 0.8,
+                top_k=options.top_k,
+                top_p=options.top_p,
+                repetition_penalty=options.repetition_penalty,
+                diffusion_steps=options.diffusion_steps,
+                cfg_rate=options.cfg_rate,
+                duration_factor=options.duration_factor,
+                text_normalization=options.text_normalization,
+                seed=options.seed,
+                speed=options.speed,
+            ):
+                tts.last_generation_info.update(emotion_meta)
+                yield chunk
+        finally:
+            _clear_mlx_cache()
 
     def batch(
         self,
